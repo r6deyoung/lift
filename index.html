@@ -191,10 +191,11 @@ const DAYS = [
   { name:"Upper A", short:"Upper A", color:"#22a050", label:"A", exercises:[
     {name:"Incline DB Press", sets:4, range:"6–10"},
     {name:"Chest-Supported Row", sets:4, range:"8–12"},
-    {name:"Flat DB / Machine Press", sets:3, range:"8–12"},
+    {name:"Seated DB Shoulder Press", sets:3, range:"8–12"},
     {name:"Lat Pulldown", sets:3, range:"8–12"},
     {name:"Lateral Raise", sets:4, range:"12–20"},
     {name:"Pec Deck", sets:3, range:"12–15"},
+    {name:"Reverse Pec Deck", sets:3, range:"12–20"},
     {name:"Triceps Pressdown", sets:3, range:"10–15"},
     {name:"Biceps Curl", sets:3, range:"10–15"},
     {name:"Abs", sets:3, range:"12–20"},
@@ -232,6 +233,27 @@ let curDay = 0, curSession = 1;
 let data = {};
 
 try { data = JSON.parse(localStorage.getItem('lift_v1') || '{}'); } catch(e) {}
+
+// One-time migration (Aug 2026): Reverse Pec Deck inserted at position 7 on Upper A.
+// Logged data is keyed by exercise index, so shift Upper A indices 6+ up by one
+// or every past session would show under the wrong lift.
+try {
+  if (!localStorage.getItem('lift_migrate_rpd')) {
+    Object.keys(data).forEach(function(k) {
+      if (k.indexOf('d0_') !== 0) return;
+      var ex = data[k] && data[k].exercises;
+      if (!ex) return;
+      var shifted = {};
+      Object.keys(ex).forEach(function(i) {
+        var n = parseInt(i, 10);
+        shifted[isNaN(n) ? i : (n >= 6 ? n + 1 : n)] = ex[i];
+      });
+      data[k].exercises = shifted;
+    });
+    localStorage.setItem('lift_v1', JSON.stringify(data));
+    localStorage.setItem('lift_migrate_rpd', '1');
+  }
+} catch(e) {}
 
 function key(d,s) { return `d${d}_s${s}`; }
 function getSD() { return data[key(curDay,curSession)] || {date:'',exercises:{}}; }
